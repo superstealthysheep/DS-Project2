@@ -1,3 +1,4 @@
+import traceback
 import os
 import statistics
 import threading
@@ -41,8 +42,9 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - centroid=Centroid(values=self.centroid)
         #       - count=len(self.records)
         #
+        print("StoreRecord() called")
         self.records.append(request.record)
-        update_centroid(self.records)
+        self.centroid = update_centroid(self.records)
         return StoreRecordResponse(
             ok=True,
             target=NODE_TARGET,
@@ -89,6 +91,7 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
     def ReplaceLocalPartition(
         self, request: ReplaceLocalPartitionRequest, context: grpc.ServicerContext
     ) -> ReplaceLocalPartitionResponse:
+        print("ReplaceLocalPartition() called")
         with self.cv:
             self.records = list(request.records)
             self.centroid = list(request.centroid.values)
@@ -120,29 +123,37 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - new_centroid = move centroid
         #       - new_count = len(move_records)
         #
+        print(f"Splitting into {request.new_node_target}")
 
-        local_records = self.records.copy() # deep copy?
-        keep_records, move_records, keep_centroid, move_centroid = kmeans_split(local_records)
+        try:
+            local_records = self.records.copy() # deep copy?
+            keep_records, move_records, keep_centroid, move_centroid = kmeans_split(local_records)
+            print("kmeans done")
 
-        channel = grpc.secure_channel(request.new_node_target)
-        stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
-        req = ReplaceLocalPartitionRequest(records=move_records, centroid=Centroid(values=move_centroid)) # TODO: why not use already-computed centroid?
+            with grpc.insecure_channel(request.new_node_target) as channel:
+                stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+                req = ReplaceLocalPartitionRequest(records=move_records, centroid=Centroid(values=move_centroid))
 
-        resp = stub.ReplaceLocalPartition(req)
-        # TODO: unhappy path
+                resp = stub.ReplaceLocalPartition(req)
+                # TODO: unhappy path
+            print("replace request sent")
 
-        self.records = keep_records
-        self.centroid = keep_centroid
+            self.records = keep_records
+            self.centroid = keep_centroid
 
-        return SplitPartitionResponse(
-            ok=True,
-            old_target=NODE_TARGET,
-            old_centroid=keep_centroid,
-            old_count=len(self.records),
-            new_target=request.new_node_target,
-            new_centroid=move_centroid,
-            new_count=len(move_records),
-        )
+            print("Split successful")
+            return SplitPartitionResponse(
+                ok=True,
+                old_target=NODE_TARGET,
+                old_centroid=Centroid(values=keep_centroid),
+                old_count=len(self.records),
+                new_target=request.new_node_target,
+                new_centroid=Centroid(values=move_centroid),
+                new_count=len(move_records),
+            )
+        except Exception:
+            traceback.print_exc()
+            exit(1)
 
         # # Default placeholder return below lets the project run before you implement this.
         # return SplitPartitionResponse(
