@@ -69,8 +69,8 @@ def put_full_corpus():
 
 def main():
 
-    put_mini_corpus()
-    # put_full_corpus()
+    # put_mini_corpus()
+    put_full_corpus()
 
 
 if __name__ == "__main__":

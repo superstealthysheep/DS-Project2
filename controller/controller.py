@@ -48,90 +48,90 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
         finally:
             self.repartitioning = False
 
-def Put(self, request: PutRequest, context: grpc.ServicerContext) -> PutResponse:
-    # TODO:
-    # Implement the controller-side Put path.
-    #
-    # High-level steps:
-    # 1. Choose the closest node for request.record.embedding by calling:
-    #       choose_closest_node(self.nodes, list(request.record.embedding))
-    # 2. Open a gRPC channel to that node's target and forward the request with:
-    #       StorageNodeServiceStub(...).StoreRecord(StoreRecordRequest(record=request.record))
-    # 3. Update self.total_vectors.
-    # 4. Update the centroid stored in self.nodes for the node that handled the Put.
-    # 5. If the node's count exceeds MAX_VECTORS_PER_NODE and a split is not already running:
-    #       - set self.repartitioning = True
-    #       - choose the next node number
-    #       - start a background thread that calls self._run_split(...)
-    # 6. Return a PutResponse with the real values from the storage node response.
-    #
-    # Helpful fields:
-    #   response.ok
-    #   response.target
-    #   response.centroid.values
-    #   response.count
-    node = choose_closest_node(self.nodes, list(request.record.embedding))
+    def Put(self, request: PutRequest, context: grpc.ServicerContext) -> PutResponse:
+        # TODO:
+        # Implement the controller-side Put path.
+        #
+        # High-level steps:
+        # 1. Choose the closest node for request.record.embedding by calling:
+        #       choose_closest_node(self.nodes, list(request.record.embedding))
+        # 2. Open a gRPC channel to that node's target and forward the request with:
+        #       StorageNodeServiceStub(...).StoreRecord(StoreRecordRequest(record=request.record))
+        # 3. Update self.total_vectors.
+        # 4. Update the centroid stored in self.nodes for the node that handled the Put.
+        # 5. If the node's count exceeds MAX_VECTORS_PER_NODE and a split is not already running:
+        #       - set self.repartitioning = True
+        #       - choose the next node number
+        #       - start a background thread that calls self._run_split(...)
+        # 6. Return a PutResponse with the real values from the storage node response.
+        #
+        # Helpful fields:
+        #   response.ok
+        #   response.target
+        #   response.centroid.values
+        #   response.count
+        node = choose_closest_node(self.nodes, list(request.record.embedding))
 
-    with grpc.insecure_channel(node["target"]) as channel:
-        stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
-        response: StoreRecordResponse = stub.StoreRecord(
-            StoreRecordRequest(record=request.record)
+        with grpc.insecure_channel(node["target"]) as channel:
+            stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+            response: StoreRecordResponse = stub.StoreRecord(
+                StoreRecordRequest(record=request.record)
+            )
+
+        self.total_vectors += 1
+
+        for n in self.nodes:
+            if n["target"] == response.target:
+                n["centroid"] = list(response.centroid.values)
+                break
+
+        split_triggered = False
+        if response.count > MAX_VECTORS_PER_NODE and not self.repartitioning:
+            self.repartitioning = True
+            new_node_num = self.next_node_num
+            self.next_node_num += 1
+            split_triggered = True
+            threading.Thread(
+                target=self._run_split,
+                args=(response.target, new_node_num),
+                daemon=True
+            ).start()
+
+        return PutResponse(
+            ok=response.ok,
+            target=response.target,
+            target_count=response.count,
+            split_triggered=split_triggered,
         )
 
-    self.total_vectors += 1
+    def Search(self, request: SearchRequest, context: grpc.ServicerContext) -> SearchLocalResponse:
+        # TODO:
+        # Implement the controller-side Search path.
+        #
+        # High-level steps:
+        # 1. Convert the incoming embedding into a plain Python list:
+        #       query_embedding = list(request.embedding)
+        # 2. Choose the closest node by calling:
+        #       choose_closest_node(self.nodes, query_embedding)
+        # 3. Forward the search to that node with:
+        #       StorageNodeServiceStub(...).SearchLocal(
+        #           SearchLocalRequest(query_embedding=query_embedding, top_k=5)
+        #       )
+        # 4. Return the SearchLocalResponse from that node.
+        #
+        # Note:
+        # The proto returns SearchLocalResponse here, so you can directly return
+        # the storage node's SearchLocal response object.
+        query_embedding = list(request.embedding)
+        node = choose_closest_node(self.nodes, query_embedding)
 
-    for n in self.nodes:
-        if n["target"] == response.target:
-            n["centroid"] = list(response.centroid.values)
-            break
+        with grpc.insecure_channel(node["target"]) as channel:
+            stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+            response: SearchLocalResponse = stub.SearchLocal(
+                SearchLocalRequest(query_embedding=query_embedding, top_k=5)
+            )
 
-    split_triggered = False
-    if response.count > MAX_VECTORS_PER_NODE and not self.repartitioning:
-        self.repartitioning = True
-        new_node_num = self.next_node_num
-        self.next_node_num += 1
-        split_triggered = True
-        threading.Thread(
-            target=self._run_split,
-            args=(response.target, new_node_num),
-            daemon=True
-        ).start()
-
-    return PutResponse(
-        ok=response.ok,
-        target=response.target,
-        target_count=response.count,
-        split_triggered=split_triggered,
-    )
-
-def Search(self, request: SearchRequest, context: grpc.ServicerContext) -> SearchLocalResponse:
-    # TODO:
-    # Implement the controller-side Search path.
-    #
-    # High-level steps:
-    # 1. Convert the incoming embedding into a plain Python list:
-    #       query_embedding = list(request.embedding)
-    # 2. Choose the closest node by calling:
-    #       choose_closest_node(self.nodes, query_embedding)
-    # 3. Forward the search to that node with:
-    #       StorageNodeServiceStub(...).SearchLocal(
-    #           SearchLocalRequest(query_embedding=query_embedding, top_k=5)
-    #       )
-    # 4. Return the SearchLocalResponse from that node.
-    #
-    # Note:
-    # The proto returns SearchLocalResponse here, so you can directly return
-    # the storage node's SearchLocal response object.
-    query_embedding = list(request.embedding)
-    node = choose_closest_node(self.nodes, query_embedding)
-
-    with grpc.insecure_channel(node["target"]) as channel:
-        stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
-        response: SearchLocalResponse = stub.SearchLocal(
-            SearchLocalRequest(query_embedding=query_embedding, top_k=5)
-        )
-
-    return response
+        return response
 
     def ClusterStatus(
         self, request: ClusterStatusRequest, context: grpc.ServicerContext
