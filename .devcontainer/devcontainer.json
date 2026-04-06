@@ -30,5 +30,6 @@
   "containerEnv": {
     "PYTHONPATH": "$PYTHONPATH:${containerWorkspaceFolder}:${containerWorkspaceFolder}/proto/src",
     "CONTROLLER_TARGET" : "host.docker.internal:50050"
-  }
+  },
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"]
 }
