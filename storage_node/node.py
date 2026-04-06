@@ -41,13 +41,22 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - centroid=Centroid(values=self.centroid)
         #       - count=len(self.records)
         #
-        # Default placeholder return below lets the project run before you implement this.
+        self.records.append(request.record)
+        update_centroid(self.records)
         return StoreRecordResponse(
-            ok=False,
+            ok=True,
             target=NODE_TARGET,
-            centroid=Centroid(values=[]),
+            centroid=Centroid(values=self.centroid),
             count=len(self.records),
         )
+
+        # # Default placeholder return below lets the project run before you implement this.
+        # return StoreRecordResponse(
+        #     ok=False,
+        #     target=NODE_TARGET,
+        #     centroid=Centroid(values=[]),
+        #     count=len(self.records),
+        # )
 
     def SearchLocal(
         self, request: SearchLocalRequest, context: grpc.ServicerContext
@@ -62,12 +71,20 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         # 3. vectors_searched should usually be len(self.records), since this node
         #    is doing a full scan over its own local partition.
         #
-        # Default placeholder return below lets the project run before you implement this.
+        top_k = local_top_k(self.records, list(request.query_embedding), request.top_k)
+
+
         return SearchLocalResponse(
-            hits=[],
+            hits=top_k,
             target=NODE_TARGET,
-            vectors_searched=0,
+            vectors_searched=len(self.records),
         )
+        # # Default placeholder return below lets the project run before you implement this.
+        # return SearchLocalResponse(
+        #     hits=[],
+        #     target=NODE_TARGET,
+        #     vectors_searched=0,
+        # )
 
     def ReplaceLocalPartition(
         self, request: ReplaceLocalPartitionRequest, context: grpc.ServicerContext
@@ -103,16 +120,40 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
         #       - new_centroid = move centroid
         #       - new_count = len(move_records)
         #
-        # Default placeholder return below lets the project run before you implement this.
+
+        local_records = self.records.copy() # deep copy?
+        keep_records, move_records, keep_centroid, move_centroid = kmeans_split(local_records)
+
+        channel = grpc.secure_channel(request.new_node_target)
+        stub = project2_pb2_grpc.StorageNodeServiceStub(channel)
+        req = ReplaceLocalPartitionRequest(records=move_records, centroid=Centroid(values=move_centroid)) # TODO: why not use already-computed centroid?
+
+        resp = stub.ReplaceLocalPartition(req)
+        # TODO: unhappy path
+
+        self.records = keep_records
+        self.centroid = keep_centroid
+
         return SplitPartitionResponse(
-            ok=False,
+            ok=True,
             old_target=NODE_TARGET,
-            old_centroid=Centroid(values=self.centroid),
+            old_centroid=keep_centroid,
             old_count=len(self.records),
             new_target=request.new_node_target,
-            new_centroid=Centroid(values=[]),
-            new_count=0,
+            new_centroid=move_centroid,
+            new_count=len(move_records),
         )
+
+        # # Default placeholder return below lets the project run before you implement this.
+        # return SplitPartitionResponse(
+        #     ok=False,
+        #     old_target=NODE_TARGET,
+        #     old_centroid=Centroid(values=self.centroid),
+        #     old_count=len(self.records),
+        #     new_target=request.new_node_target,
+        #     new_centroid=Centroid(values=[]),
+        #     new_count=0,
+        # )
 
     def GetNodeStats(
         self, request: GetNodeStatsRequest, context: grpc.ServicerContext
