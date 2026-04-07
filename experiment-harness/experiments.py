@@ -8,8 +8,8 @@ import os
 
 VERBOSE = True
 project_name = "project2"
-# docker = "podman"
-docker = "docker"
+docker = "podman"
+# docker = "docker"
 # if "podman" in os.getenv("DOCKER_HOST", ""):
     # docker = "podman"
 
@@ -60,7 +60,8 @@ def cleanup():
         shell(["docker", "compose", "down"])
         storage_node_ids = shell(["docker", "ps", "-aq", "--filter", "name=storage-node"])
         storage_node_ids = storage_node_ids.split()
-        shell(["docker", "rm", "-f"] + storage_node_ids)
+        controller_ids = shell(["docker", "ps", "-aq", "--filter", "name=storage-node"]).split()
+        shell(["docker", "rm", "-f"] + storage_node_ids + controller_ids)
 
 def build(max_vectors_per_node=1000):
     cleanup()
@@ -85,5 +86,6 @@ if __name__ == "__main__":
         print(f"Beginning trial for {max_vectors_per_node=}:")
         shell(
             [docker, "exec", "-w", devcontainer_root, get_devcontainer_id(), "python", "experiment-harness/devcontainer.py"], 
-            env=dict(WORKSPACE_FOLDER=devcontainer_root),
+            env=dict(WORKSPACE_FOLDER=devcontainer_root, MAX_VECTORS_PER_NODE=str(max_vectors_per_node)),
         )
+        input("Press enter to build next experiment")

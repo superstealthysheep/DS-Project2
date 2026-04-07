@@ -13,10 +13,15 @@ def hello_world_test():
 
 def score_all_questions_test():
     with exp.working_directory(exp.devcontainer_root/"evaluation"):
+        sys.path.append(exp.devcontainer_root)
         sys.path.append(os.getcwd()) 
+        # import ingestion
+        # ingestion.load_
         import score_all_questions as saq
         saq.main()
 
 if __name__ == "__main__":
-    os.environ['WORKSPACE_FOLDER'] = str(exp.devcontainer_root)
+    # os.environ['WORKSPACE_FOLDER'] = str(exp.devcontainer_root)
+    # score_all_questions_test()
+    ...
 

@@ -66,6 +66,9 @@ def put_full_corpus():
                 
                 count += 1
 
+    return count
+
+
 def put_grouped_corpus():
 
     corpus_dirs = [
@@ -100,6 +103,7 @@ def put_grouped_corpus():
                         )
                         
                         count += 1
+    return count
 
 
 def main():

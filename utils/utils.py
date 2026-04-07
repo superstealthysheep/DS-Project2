@@ -152,3 +152,31 @@ def create_storage_node(node_num: int) -> str:
     )
     wait_for_grpc_target(target)
     return target
+
+# def rebuild_everything() -> str:
+#     client = docker.from_env()
+#     # name: str = f"storage-node-{node_num}"
+#     # target: str = f"{name}:{NODE_PORT}"
+
+#     client.containers.get()
+#     try:
+#         client.containers.get(name).remove(force=True)
+#     except docker.errors.NotFound:
+#         pass
+
+#     client.containers.run(
+#         DOCKER_IMAGE,
+#         name=name,
+#         hostname=name,
+#         network=DOCKER_NETWORK,
+#         detach=True,
+#         working_dir="/app",
+#         command=["python", "-u", "storage_node/node.py"],
+#         environment={
+#             "GRPC_SERVER_PORT": str(NODE_PORT),
+#             "NODE_TARGET": target,
+#             "PYTHONPATH": "/app:/app/proto/src",
+#         },
+#     )
+#     wait_for_grpc_target(target)
+#     return target

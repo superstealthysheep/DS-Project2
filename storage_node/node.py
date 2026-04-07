@@ -29,8 +29,7 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
     def StoreRecord(
         self, request: StoreRecordRequest, context: grpc.ServicerContext
     ) -> StoreRecordResponse:
-        # TODO:
-        # Implement the local storage-node Put logic.
+        # Implements the local storage-node Put logic.
         #
         # High-level steps:
         # 1. Append request.record to self.records.
@@ -63,8 +62,7 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
     def SearchLocal(
         self, request: SearchLocalRequest, context: grpc.ServicerContext
     ) -> SearchLocalResponse:
-        # TODO:
-        # Implement local top-k semantic search on this node.
+        # Implements local top-k semantic search on this node.
         #
         # High-level steps:
         # 1. Use the helper:
@@ -104,8 +102,7 @@ class StorageNodeService(project2_pb2_grpc.StorageNodeServiceServicer):
     def SplitPartition(
         self, request: SplitPartitionRequest, context: grpc.ServicerContext
     ) -> SplitPartitionResponse:
-        # TODO:
-        # Implement local repartitioning on the overloaded node.
+        # Implements local repartitioning on the overloaded node.
         #
         # High-level steps:
         # 1. Copy the current local records into a temporary list.

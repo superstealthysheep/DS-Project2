@@ -162,10 +162,16 @@ def print_summary(results: list[dict], total_vectors: int) -> None:
 
 
 def main() -> None:
-    print("SKIPPING Step 1: ingesting full corpus")
+    print("Step 1: ingesting full corpus")
+    import sys
+    sys.path.append(str(Path(os.environ['WORKSPACE_FOLDER'], "ingestion")))
+    import ingest
+    # total_vectors = ingest.put_full_corpus()
+    total_vectors = ingest.put_grouped_corpus()
+
     # total_vectors: int = ingest_full_corpus(CORPUS_FILE)
     # total_vectors: int = ingest_grouped_corpus(CORPUS_FILE)
-    total_vectors = 1314
+    # total_vectors = 1314
 
     print("\nStep 2: loading all scored questions")
     questions: list[dict] = load_questions(QUESTIONS_FILE)
