@@ -11,7 +11,7 @@ project_name = "project2"
 # docker = "podman"
 docker = "docker"
 # if "podman" in os.getenv("DOCKER_HOST", ""):
-#     docker = "podman"
+    # docker = "podman"
 
 @contextlib.contextmanager
 def working_directory(path: pathlib.Path):
@@ -80,8 +80,8 @@ if __name__ == "__main__":
 
     # shell([f"docker", "exec", "-e", "MAX_VECTORS_PER_NODE={max_vectors_per_node}"])
 
-    for max_vectors_per_node in [100, 250, 500, 1000, 2000]:
-        # build(max_vectors_per_node=max_vectors_per_node)
+    for max_vectors_per_node in [250, 500, 1000, 2000]:
+        build(max_vectors_per_node=max_vectors_per_node)
         print(f"Beginning trial for {max_vectors_per_node=}:")
         shell(
             [docker, "exec", "-w", devcontainer_root, get_devcontainer_id(), "python", "experiment-harness/devcontainer.py"], 
