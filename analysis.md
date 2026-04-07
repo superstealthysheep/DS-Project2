@@ -4,14 +4,33 @@
 
 | Threshold | Avg Vectors Searched | Search Fraction | Avg Returned Score | Avg Oracle Score | Overall Score |
 |-----------|---------------------|-----------------|--------------------|------------------|---------------|
-| 500       | 430.66              | 0.3260          | 0.5579             | 0.5812           | 2.9399        |
-| 1000      | 675.73              | 0.5115          | 0.5861             | 0.5812           | 1.9611        |
 
-At threshold 500 the corpus splits into more partitions, so each search only looks at around 430 vectors instead of 675. That makes search cheaper and pushes the overall score up from 1.96 to 2.94. The downside is accuracy drops a little since with more partitions there is a higher chance the query gets routed to the wrong node and misses relevant records. At threshold 1000 each node holds more records so the search is more thorough, but you pay for it by searching a bigger chunk of the corpus every time. Basically smaller threshold means faster but slightly less accurate, larger threshold means more accurate but slower.
 
 ## Deliverable B: Does Insertion Order Matter?
 
 *Results pending — experiments to be run with shuffled vs grouped ingestion order.*
+The following were run with `MAX_VECTORS_PER_NODE=1000`
+
+| Insertion order                 | Avg Vectors Searched | Search Fraction | Avg Returned Score | Avg Oracle Score | Overall Score |
+|---------------------------------|----------------------|-----------------|--------------------|------------------|---------------|
+| Shuffled                        | 675.73               | 0.5115          | 0.5861             | 0.5812           | 1.9611        |
+| Sequential by type and file     | 593.40               | 0.4516          | 0.5637             | 0.5812           | 2.1856        |
+
+Analysis: Clearly, there is a difference here. However, the difference is not enormous.
+One effect of using a non-shuffled insertion order is that the early entries have a strong effect on the grouping of the data.
+In this case, since there is only one split occurring, the only important property of the ordering is what vectors are present at the moment that the dataset is split. This happens at 1000 out of 1321 entries. 
+For this reason, we repeat the experiment with `MAX_VECTORS_PER_NODE=250`:
+
+| Insertion order                 | Avg Vectors Searched | Search Fraction | Avg Returned Score | Avg Oracle Score | Overall Score |
+|---------------------------------|----------------------|-----------------|--------------------|------------------|---------------|
+| Shuffled                        | 128.66               | 0.0974          | 0.5454             | 0.5812           | 11.1313       |
+| Sequential by type and file     | 116.43               | 0.0885          | 0.5327             | 0.5812           | 13.0166       |
+
+For this sort of online k-means clustering that we're doing, it may make sense to try to (if possible) add data in related clumps at a time. The reason is that, generally, clusters with narrow diameters are more "useful" clusters (i.e. they are more tighly related to each other and to the centroid, thus the centroid provides a good "gist" of what you can find if you look in the cluster). If we consider the opposite case, high-variance clusters are not particularly useful because from the centroid alone it is not easy to determine if your query vector is to be found at that node.
+
+Sorting the vectors temporally should result in a sequence of vectors that from moment to moment should be quite semantically similar. Intuition for this is that within one lecture, the materials will all be about one topic. And from one lecture to the next, the topics tend to be relatively related. You might say that "the course's semantic content varies rather smoothly over time". 
+
+For this reason, building clusters in this order may result in lower-variance clusters, meaning it is easier to from the centroid alone find the vectors you're querying for.
 
 *Analysis pending.*
 
