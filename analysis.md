@@ -2,16 +2,12 @@
 
 ## Deliverable A: Accuracy vs Vectors Searched
 
-*Results pending — experiments to be run with multiple MAX_VECTORS_PER_NODE values.*
-
 | Threshold | Avg Vectors Searched | Search Fraction | Avg Returned Score | Avg Oracle Score | Overall Score |
 |-----------|---------------------|-----------------|--------------------|------------------|---------------|
-| 250       |                     |                 |                    |                  |               |
-| 500       |                     |                 |                    |                  |               |
-| 1000      |                     |                 |                    |                  |               |
-| 2000      |                     |                 |                    |                  |               |
+| 500       | 430.66              | 0.3260          | 0.5579             | 0.5812           | 2.9399        |
+| 1000      | 675.73              | 0.5115          | 0.5861             | 0.5812           | 1.9611        |
 
-*Analysis pending.*
+At threshold 500 the corpus splits into more partitions, so each search only looks at around 430 vectors instead of 675. That makes search cheaper and pushes the overall score up from 1.96 to 2.94. The downside is accuracy drops a little since with more partitions there is a higher chance the query gets routed to the wrong node and misses relevant records. At threshold 1000 each node holds more records so the search is more thorough, but you pay for it by searching a bigger chunk of the corpus every time. Basically smaller threshold means faster but slightly less accurate, larger threshold means more accurate but slower.
 
 ## Deliverable B: Does Insertion Order Matter?
 
