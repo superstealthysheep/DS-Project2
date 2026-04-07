@@ -7,9 +7,8 @@ import project2_pb2_grpc
 from utils.config import CONTROLLER_PORT, NODE_PORT
 from utils.utils import choose_closest_node, create_storage_node
 
-
-MAX_VECTORS_PER_NODE = 1000
-
+import os
+MAX_VECTORS_PER_NODE = int(os.getenv("MAX_VECTORS_PER_NODE", 1000))
 
 class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
     def __init__(self) -> None:
@@ -22,6 +21,7 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                 "centroid": [],
             }
         ]
+        self.max_vectors_per_node = MAX_VECTORS_PER_NODE
 
     def _run_split(self, old_target: str, new_node_num: int) -> None:
         try:
@@ -86,7 +86,7 @@ class ControllerService(project2_pb2_grpc.ControllerServiceServicer):
                 break
 
         split_triggered = False
-        if response.count > MAX_VECTORS_PER_NODE and not self.repartitioning:
+        if response.count > self.max_vectors_per_node and not self.repartitioning:
             self.repartitioning = True
             new_node_num = self.next_node_num
             self.next_node_num += 1

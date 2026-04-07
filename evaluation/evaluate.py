@@ -10,6 +10,7 @@ import project2_pb2_grpc
 from utils.config import CONTROLLER_TARGET
 
 QUESTIONS_FILE = Path(os.environ.get("WORKSPACE_FOLDER", "."), "question_set", "questions_scored.jsonl")
+print(f"{Path().resolve()=}")
 
 def load_random_question(path: Path) -> dict:
     with open(path, "r", encoding="utf-8") as file:
