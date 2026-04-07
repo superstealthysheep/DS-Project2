@@ -2,6 +2,7 @@
 
 import experiments as exp
 import os
+import sys
 
 def hello_world_test():
     with exp.working_directory(exp.project_root):
@@ -10,6 +11,12 @@ def hello_world_test():
 
         print("print hello world?")
 
+def score_all_questions_test():
+    with exp.working_directory(exp.devcontainer_root/"evaluation"):
+        sys.path.append(os.getcwd()) 
+        import score_all_questions as saq
+        saq.main()
+
 if __name__ == "__main__":
-    with exp.working_directory(exp.project_root/"evaluation"):
-        exp.shell(["python", "evaluate.py"], env=os.environ | dict(WORKSPACE_FOLDER=exp.devcontainer_root))
+    os.environ['WORKSPACE_FOLDER'] = str(exp.devcontainer_root)
+

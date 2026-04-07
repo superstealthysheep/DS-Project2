@@ -8,8 +8,10 @@ import os
 
 VERBOSE = True
 project_name = "project2"
-docker = "podman"
-# docker = "docker"
+# docker = "podman"
+docker = "docker"
+# if "podman" in os.getenv("DOCKER_HOST", ""):
+#     docker = "podman"
 
 @contextlib.contextmanager
 def working_directory(path: pathlib.Path):
@@ -74,10 +76,14 @@ def build(max_vectors_per_node=1000):
 if __name__ == "__main__":
     # print(get_devcontainer_id())
     print("attempting build")
+    print(f"NOTE: ASSUMING DEVCONTAINER IS RUNNING ON {docker=}. Can change this in at top of `experiment_harness/experiments.py`")
+
     # shell([f"docker", "exec", "-e", "MAX_VECTORS_PER_NODE={max_vectors_per_node}"])
 
-    for max_vectors_per_node in [100, 200]:
+    for max_vectors_per_node in [100, 250, 500, 1000, 2000]:
         # build(max_vectors_per_node=max_vectors_per_node)
-        shell([docker, "exec", "-w", devcontainer_root, get_devcontainer_id(), "python", "experiment-harness/devcontainer.py"], 
-            #   env=dict(WORKING_DIRECTORY=pathlib.Path("/workspaces/"))
-              )
+        print(f"Beginning trial for {max_vectors_per_node=}:")
+        shell(
+            [docker, "exec", "-w", devcontainer_root, get_devcontainer_id(), "python", "experiment-harness/devcontainer.py"], 
+            env=dict(WORKSPACE_FOLDER=devcontainer_root),
+        )
