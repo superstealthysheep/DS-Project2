@@ -162,8 +162,10 @@ def print_summary(results: list[dict], total_vectors: int) -> None:
 
 
 def main() -> None:
-    print("Step 1: ingesting full corpus")
-    total_vectors: int = ingest_full_corpus(CORPUS_FILE)
+    print("SKIPPING Step 1: ingesting full corpus")
+    # total_vectors: int = ingest_full_corpus(CORPUS_FILE)
+    # total_vectors: int = ingest_grouped_corpus(CORPUS_FILE)
+    total_vectors = 1314
 
     print("\nStep 2: loading all scored questions")
     questions: list[dict] = load_questions(QUESTIONS_FILE)

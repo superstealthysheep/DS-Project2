@@ -66,11 +66,47 @@ def put_full_corpus():
                 
                 count += 1
 
+def put_grouped_corpus():
+
+    corpus_dirs = [
+        Path(CORPUS_FOLDER, "course_papers"),
+        Path(CORPUS_FOLDER, "demo"),
+        Path(CORPUS_FOLDER, "lecture_slides"),
+        Path(CORPUS_FOLDER, "lecture_transcripts"),
+        Path(CORPUS_FOLDER, "textbook"),
+    ]
+
+    with grpc.insecure_channel(CONTROLLER_TARGET) as channel:
+
+        # Create stub
+        stub = project2_pb2_grpc.ControllerServiceStub(channel)
+
+        count = 0
+        for dirr in corpus_dirs:
+            print(f"\033[1m{dirr}\033[0m")
+            for path in dirr.glob("*.jsonl"):
+                print(f"\033[1m{path}\033[0m")
+                with open(path, "r") as f:
+                    for line in f:
+                        # if count > 150:
+                        #     break
+
+                        record = corpus_line_to_record(line)
+                        response = stub.Put(project2_pb2.PutRequest(record=record))
+
+                        print(
+                            f"put {count}: target={response.target} "
+                            f"count={response.target_count} split_triggered={response.split_triggered}"
+                        )
+                        
+                        count += 1
+
 
 def main():
 
     # put_mini_corpus()
-    put_full_corpus()
+    # put_full_corpus()
+    put_grouped_corpus()
 
 
 if __name__ == "__main__":
